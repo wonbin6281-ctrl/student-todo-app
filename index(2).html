@@ -593,6 +593,7 @@
     foodType = '';
     conversationMessages = [];
     messagesEl.innerHTML = '';
+    localStorage.removeItem('nyamnyam_conv');
     document.getElementById('chatScreen').classList.remove('active');
     document.getElementById('step2').classList.remove('active');
     document.getElementById('step1').classList.add('active');
