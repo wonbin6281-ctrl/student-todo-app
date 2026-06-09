@@ -124,9 +124,86 @@
   .task-card:hover .delete-btn { opacity: 1; }
   #subjectDropdown { max-height: 220px; overflow-y: auto; }
   .subject-filter-btn { white-space: nowrap; flex-shrink: 0; }
+  /* Password lock overlay */
+  #lockScreen {
+    position: fixed; inset: 0; background: #f9f9f9;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999; gap: 1.5rem;
+  }
+  #lockScreen.hidden { display: none; }
+  #pinDisplay {
+    display: flex; gap: 12px; margin: 0.5rem 0;
+  }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #c4c7c7; transition: background 0.15s;
+  }
+  .pin-dot.filled { background: #000; border-color: #000; }
+  #pinError {
+    color: #A32D2D; font-size: 13px; font-weight: 500;
+    min-height: 18px; text-align: center;
+  }
+  .pin-grid {
+    display: grid; grid-template-columns: repeat(3, 72px);
+    gap: 10px;
+  }
+  .pin-key {
+    height: 72px; border-radius: 12px;
+    background: #fff; border: 1px solid #F0F0F0;
+    font-size: 22px; font-weight: 600; cursor: pointer;
+    transition: background 0.12s, transform 0.08s;
+    font-family: 'Inter', sans-serif;
+  }
+  .pin-key:hover { background: #f3f3f4; }
+  .pin-key:active { transform: scale(0.94); background: #e8e8e8; }
+  .pin-key.action { font-size: 13px; font-weight: 500; color: #5e5e5e; }
+
+  /* Search bar */
+  #searchBar {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid #F0F0F0;
+    border-radius: 12px; padding: 8px 14px;
+    transition: border-color 0.2s;
+  }
+  #searchBar:focus-within { border-color: #000; }
+  #searchInput {
+    flex: 1; border: none; outline: none; background: transparent;
+    font-size: 14px; font-family: 'Inter', sans-serif; color: #1a1c1c;
+  }
+  #searchInput::placeholder { color: #c7c6c6; }
+  #searchClear {
+    cursor: pointer; color: #c7c6c6; display: none;
+    font-size: 18px; line-height: 1;
+  }
+  #searchClear.visible { display: block; color: #5e5e5e; }
 </style>
 </head>
 <body class="bg-background text-on-background min-h-screen">
+
+<!-- ── 잠금 화면 ── -->
+<div id="lockScreen">
+  <div style="text-align:center">
+    <p style="font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:.4rem">내 할 일</p>
+    <p style="font-size:22px;font-weight:700;color:#111;letter-spacing:-.01em">암호를 입력하세요</p>
+  </div>
+  <div id="pinDisplay"></div>
+  <p id="pinError"></p>
+  <div class="pin-grid">
+    <button class="pin-key" data-k="1">1</button>
+    <button class="pin-key" data-k="2">2</button>
+    <button class="pin-key" data-k="3">3</button>
+    <button class="pin-key" data-k="4">4</button>
+    <button class="pin-key" data-k="5">5</button>
+    <button class="pin-key" data-k="6">6</button>
+    <button class="pin-key" data-k="7">7</button>
+    <button class="pin-key" data-k="8">8</button>
+    <button class="pin-key" data-k="9">9</button>
+    <button class="pin-key action" data-k="ㄹ">ㄹ</button>
+    <button class="pin-key" data-k="0">0</button>
+    <button class="pin-key action" data-k="__del__">⌫</button>
+  </div>
+</div>
 
 <!-- Top Navigation Anchor -->
 <header class="bg-background sticky top-0 z-50">
@@ -146,8 +223,14 @@
       </div>
     </div>
     <p id="todayLabel" class="text-secondary font-medium"></p>
+    <!-- Search Bar -->
+    <div id="searchBar" class="mt-4">
+      <span class="material-symbols-outlined" style="font-size:18px;color:#c7c6c6">search</span>
+      <input id="searchInput" type="text" placeholder="할 일 검색..." autocomplete="off"/>
+      <span id="searchClear" class="material-symbols-outlined">close</span>
+    </div>
     <!-- Secondary Navigation Links -->
-    <nav class="flex gap-6 mt-6">
+    <nav class="flex gap-6 mt-5">
       <a id="tab-all" class="tab-link text-primary border-b-2 border-primary font-bold pb-2 transition-colors cursor-pointer" data-tab="all">전체</a>
       <a id="tab-incomplete" class="tab-link text-secondary font-medium pb-2 hover:text-primary transition-colors cursor-pointer" data-tab="incomplete">미완료</a>
       <a id="tab-complete" class="tab-link text-secondary font-medium pb-2 hover:text-primary transition-colors cursor-pointer" data-tab="complete">완료</a>
@@ -266,11 +349,65 @@ const DEFAULT_TASKS = [
   { id: 9, title: '자료구조와 알고리즘 시험',      subject: '자료구조와 알고리즘', type: '시험', dueDate: '2026-06-20', dueTime: '',    completed: false },
 ];
 
+// ─── Password Lock ────────────────────────────────────────────────────────────
+const CORRECT_PIN = '3189ㄹ';
+let pinBuffer = '';
+
+function initLock() {
+  if (sessionStorage.getItem('unlocked') === '1') {
+    document.getElementById('lockScreen').classList.add('hidden');
+    return;
+  }
+  renderPinDisplay();
+  document.querySelectorAll('.pin-key').forEach(btn => {
+    btn.addEventListener('click', () => handlePinKey(btn.dataset.k));
+  });
+  // Keyboard support
+  document.addEventListener('keydown', e => {
+    if (document.getElementById('lockScreen').classList.contains('hidden')) return;
+    if (/^[0-9ㄹ]$/.test(e.key)) handlePinKey(e.key);
+    if (e.key === 'Backspace') handlePinKey('__del__');
+  });
+}
+
+function handlePinKey(k) {
+  if (k === '__del__') {
+    pinBuffer = pinBuffer.slice(0, -1);
+  } else {
+    pinBuffer += k;
+  }
+  renderPinDisplay();
+  document.getElementById('pinError').textContent = '';
+
+  if (pinBuffer.length === CORRECT_PIN.length) {
+    if (pinBuffer === CORRECT_PIN) {
+      sessionStorage.setItem('unlocked', '1');
+      document.getElementById('lockScreen').style.transition = 'opacity 0.3s';
+      document.getElementById('lockScreen').style.opacity = '0';
+      setTimeout(() => document.getElementById('lockScreen').classList.add('hidden'), 300);
+    } else {
+      document.getElementById('pinError').textContent = '암호가 올바르지 않습니다';
+      document.querySelectorAll('.pin-dot').forEach(d => {
+        d.style.background = '#A32D2D'; d.style.borderColor = '#A32D2D';
+      });
+      setTimeout(() => { pinBuffer = ''; renderPinDisplay(); document.getElementById('pinError').textContent = ''; }, 700);
+    }
+  }
+}
+
+function renderPinDisplay() {
+  const container = document.getElementById('pinDisplay');
+  container.innerHTML = Array.from({length: CORRECT_PIN.length}, (_, i) =>
+    `<div class="pin-dot ${i < pinBuffer.length ? 'filled' : ''}"></div>`
+  ).join('');
+}
+
 // ─── State ───────────────────────────────────────────────────────────────────
 let tasks = [];
 let activeTab = 'all';        // 'all' | 'incomplete' | 'complete'
 let activeType = '과제';       // '과제' | '시험'
 let activeSubject = '전체';    // '전체' | subject name
+let searchQuery = '';          // search text
 
 // Input form state
 let inputSubject = '';
@@ -336,11 +473,13 @@ function getAllSubjects() {
 }
 
 function getFilteredTasks() {
+  const q = searchQuery.trim().toLowerCase();
   const filtered = tasks.filter(t => {
     if (activeTab === 'incomplete' && t.completed) return false;
     if (activeTab === 'complete' && !t.completed) return false;
     if (t.type !== activeType) return false;
     if (activeSubject !== '전체' && t.subject !== activeSubject) return false;
+    if (q && !t.title.toLowerCase().includes(q) && !t.subject.toLowerCase().includes(q)) return false;
     return true;
   });
   // 미완료: 마감일 오름차순, 완료: 하단에
@@ -654,7 +793,22 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addTask();
 });
 
+// ─── Search ───────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', function() {
+  searchQuery = this.value;
+  const clearBtn = document.getElementById('searchClear');
+  clearBtn.classList.toggle('visible', searchQuery.length > 0);
+  renderAll();
+});
+document.getElementById('searchClear').addEventListener('click', function() {
+  searchQuery = '';
+  document.getElementById('searchInput').value = '';
+  this.classList.remove('visible');
+  renderAll();
+});
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
+initLock();
 loadTasks();
 renderAll();
 </script>
