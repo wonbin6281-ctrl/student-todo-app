@@ -1,0 +1,5 @@
+.vercel
+openai_key.env
+meals.json
+node_modules/
+server.log

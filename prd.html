@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PRD — 능동 밥집 추천 AI</title>
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a22;
+      --surface2: #22222e;
+      --border: #2e2e3e;
+      --accent: #7c6ff7;
+      --accent2: #f7a26f;
+      --text: #e8e8f0;
+      --muted: #8888a8;
+      --green: #5fd4a0;
+      --red: #f76f6f;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      padding: 60px 40px 50px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(124,111,247,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: 20%;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(247,162,111,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .header-inner { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+    .header-tag {
+      display: inline-block;
+      background: rgba(124,111,247,0.2);
+      border: 1px solid rgba(124,111,247,0.4);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-sub {
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .header-meta {
+      display: flex;
+      gap: 20px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .meta-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .meta-chip span { color: var(--text); font-weight: 500; }
+
+    /* ── Layout ── */
+    main { max-width: 900px; margin: 0 auto; padding: 48px 40px; }
+    section { margin-bottom: 48px; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .card + .card { margin-top: 12px; }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead tr {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 12px 18px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    td {
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .tag {
+      display: inline-block;
+      background: rgba(124,111,247,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(124,111,247,0.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Status badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.ok {
+      background: rgba(95,212,160,0.15);
+      color: var(--green);
+      border: 1px solid rgba(95,212,160,0.3);
+    }
+    .badge.no {
+      background: rgba(247,111,111,0.15);
+      color: var(--red);
+      border: 1px solid rgba(247,111,111,0.3);
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot.ok { background: var(--green); }
+    .dot.no { background: var(--red); }
+
+    /* ── Feature list ── */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .feature-card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .feature-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Prompt box ── */
+    .prompt-box {
+      background: #0d0d12;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: #a8d8a8;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .prompt-box .comment { color: #555577; }
+    .prompt-box .keyword { color: var(--accent); }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-tag">Product Requirements Document</div>
+    <h1>능동 밥집 추천 AI</h1>
+    <p class="header-sub">광진구 능동 자취생을 위한 AI 기반 식사 메뉴 추천 웹앱</p>
+    <div class="header-meta">
+      <div class="meta-chip">버전 <span>v1.0</span></div>
+      <div class="meta-chip">작성일 <span>2026-06-09</span></div>
+      <div class="meta-chip">형태 <span>HTML 단일 파일</span></div>
+      <div class="meta-chip">위치 <span>광진구 능동</span></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 1. 개요 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">1</div>
+      <h2>개요</h2>
+    </div>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr>
+            <td style="width:140px; color:var(--muted); font-weight:600; font-size:13px;">목적</td>
+            <td>광진구 능동 자취생이 매일 "뭐 먹지?" 고민을 AI와 대화하며 해결</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted); font-weight:600; font-size:13px;">핵심 가치</td>
+            <td>최근 3일 식사 기억 → 중복 없는 추천 / 대화형 상황 파악 / 네이버 지도 링크 즉시 연결</td>
+          </tr>
+          <tr>
+            <td style="color:var(--muted); font-weight:600; font-size:13px;">탐색 반경</td>
+            <td>능동 기준 도보 10분 이내 (약 800m)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. 기술 스택 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">2</div>
+      <h2>기술 스택</h2>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>선택</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>형태</td>
+            <td>HTML 단일 파일</td>
+            <td style="color:var(--muted); font-size:13px;">서버 불필요</td>
+          </tr>
+          <tr>
+            <td>AI 엔진</td>
+            <td>OpenAI GPT-4o</td>
+            <td style="color:var(--muted); font-size:13px;">Chat Completions API + Function Calling</td>
+          </tr>
+          <tr>
+            <td>지도</td>
+            <td>네이버 지도 Web Dynamic Map</td>
+            <td style="color:var(--muted); font-size:13px;">지도 표시용</td>
+          </tr>
+          <tr>
+            <td>식당 검색</td>
+            <td>OpenAI 지식 기반</td>
+            <td style="color:var(--muted); font-size:13px;">네이버 Local Search API 대체</td>
+          </tr>
+          <tr>
+            <td>저장소</td>
+            <td>브라우저 localStorage</td>
+            <td style="color:var(--muted); font-size:13px;">서버 없이 식사 기록 유지</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3. 핵심 기능 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">3</div>
+      <h2>핵심 기능</h2>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>
+          <div class="feature-icon" style="background:rgba(124,111,247,0.15);">💬</div>
+          AI 대화 추천
+        </h3>
+        <p>채팅 UI로 AI와 대화하며 추천받음. AI가 먼저 시간대·예산·인원·기피 음식을 자연스럽게 질문해서 파악.</p>
+      </div>
+      <div class="feature-card">
+        <h3>
+          <div class="feature-icon" style="background:rgba(95,212,160,0.15);">🧠</div>
+          식사 기억
+        </h3>
+        <p>최근 3일간 먹은 음식을 기억해 자동으로 중복 추천 회피. localStorage에 저장되어 앱 재시작 후에도 유지.</p>
+      </div>
+      <div class="feature-card">
+        <h3>
+          <div class="feature-icon" style="background:rgba(247,162,111,0.15);">📍</div>
+          네이버 지도 연결
+        </h3>
+        <p>추천된 가게를 클릭 한 번으로 네이버 지도 검색 페이지로 바로 이동.</p>
+      </div>
+      <div class="feature-card">
+        <h3>
+          <div class="feature-icon" style="background:rgba(247,111,111,0.15);">🚫</div>
+          중복 회피
+        </h3>
+        <p>오늘 포함 최근 3일치 식사 기록을 시스템 프롬프트에 자동 주입해 AI가 이미 먹은 음식을 피해 추천.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 추천 결과 형식 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">4</div>
+      <h2>추천 결과 형식</h2>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>가게 이름</td>
+            <td>추천 식당명</td>
+          </tr>
+          <tr>
+            <td>추천 메뉴</td>
+            <td>해당 가게의 대표 메뉴 1~2개</td>
+          </tr>
+          <tr>
+            <td>네이버 지도 링크</td>
+            <td>클릭 시 네이버 지도 검색 결과로 바로 이동</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 5. Memory -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">5</div>
+      <h2>Memory (대화 기억)</h2>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>항목</th>
+            <th>내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>저장 위치</td>
+            <td>브라우저 localStorage</td>
+          </tr>
+          <tr>
+            <td>보존 기간</td>
+            <td>최근 3일치 식사 기록 (오래된 것 자동 삭제)</td>
+          </tr>
+          <tr>
+            <td>저장 시점</td>
+            <td>사용자가 "먹었다" 확정 시 또는 AI가 <span class="tag">save_meal</span> 호출 시</td>
+          </tr>
+          <tr>
+            <td>저장 내용</td>
+            <td>날짜, 식사 시간대, 가게 이름, 메뉴</td>
+          </tr>
+          <tr>
+            <td>활용 방식</td>
+            <td>매 대화 시작 시 시스템 프롬프트에 자동 주입 → AI가 중복 추천 회피</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. Tools -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">6</div>
+      <h2>Tools (AI Function Calling)</h2>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Tool 이름</th>
+            <th>설명</th>
+            <th>입력</th>
+            <th>출력</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag">get_recent_meals</span></td>
+            <td>localStorage에서 최근 3일 식사 기록 조회</td>
+            <td style="color:var(--muted); font-size:13px;">없음</td>
+            <td style="font-size:13px; color:var(--muted);">[{date, meal_time, place, menu}]</td>
+          </tr>
+          <tr>
+            <td><span class="tag">save_meal</span></td>
+            <td>식사 기록을 localStorage에 저장</td>
+            <td style="font-size:13px; color:var(--muted);">{date, meal_time, place, menu}</td>
+            <td style="font-size:13px; color:var(--muted);">저장 성공 여부</td>
+          </tr>
+          <tr>
+            <td><span class="tag">generate_naver_map_link</span></td>
+            <td>가게 이름으로 네이버 지도 검색 URL 생성</td>
+            <td style="font-size:13px; color:var(--muted);">{place_name}</td>
+            <td style="font-size:13px; color:var(--muted);">네이버 지도 검색 URL</td>
+          </tr>
+          <tr>
+            <td><span class="tag">get_current_datetime</span></td>
+            <td>현재 날짜 / 시간 / 요일 조회</td>
+            <td style="color:var(--muted); font-size:13px;">없음</td>
+            <td style="font-size:13px; color:var(--muted);">{date, time, weekday}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7. 시스템 프롬프트 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">7</div>
+      <h2>시스템 프롬프트 (초안)</h2>
+    </div>
+    <div class="prompt-box"><span class="comment"># 역할</span>
+너는 광진구 능동에 사는 자취생의 식사 메뉴 추천 AI야.
+
+<span class="comment"># 규칙</span>
+- <span class="keyword">능동 기준 도보 10분 이내</span> (약 800m) 식당만 추천해
+- <span class="keyword">최근 3일간 먹은 음식</span>은 반드시 피해 (기억 참고)
+- 추천 전에 아래 항목을 자연스럽게 대화로 파악해:
+  → 식사 시간대 (아침/점심/저녁)
+  → 예산
+  → 인원 (혼밥/같이)
+  → 기피 음식
+
+<span class="comment"># 추천 형식</span>
+각 추천마다 반드시 포함:
+  1. 가게 이름
+  2. 추천 메뉴
+  3. 네이버 지도 링크 (generate_naver_map_link 도구 사용)
+
+<span class="comment"># 식사 확정 시</span>
+사용자가 먹기로 결정하면 save_meal 도구로 기록 저장</div>
+  </section>
+
+  <!-- 8. API 키 현황 -->
+  <section>
+    <div class="section-label">
+      <div class="section-num">8</div>
+      <h2>API 키 현황</h2>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>키</th>
+            <th>상태</th>
+            <th>비고</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>OpenAI API Key</td>
+            <td><span class="badge ok"><span class="dot ok"></span>확보</span></td>
+            <td style="font-size:13px; color:var(--muted);">openai_key.env</td>
+          </tr>
+          <tr>
+            <td>네이버 Maps Key</td>
+            <td><span class="badge ok"><span class="dot ok"></span>확보</span></td>
+            <td style="font-size:13px; color:var(--muted);">Web Dynamic Map</td>
+          </tr>
+          <tr>
+            <td>네이버 Search Key</td>
+            <td><span class="badge no"><span class="dot no"></span>미사용</span></td>
+            <td style="font-size:13px; color:var(--muted);">OpenAI 지식 기반으로 대체</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>
