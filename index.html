@@ -199,8 +199,7 @@
     <button class="pin-key" data-k="7">7</button>
     <button class="pin-key" data-k="8">8</button>
     <button class="pin-key" data-k="9">9</button>
-    <button class="pin-key action" data-k="ㄹ">ㄹ</button>
-    <button class="pin-key" data-k="0">0</button>
+    <button class="pin-key" data-k="0" style="grid-column:2">0</button>
     <button class="pin-key action" data-k="__del__">⌫</button>
   </div>
 </div>
@@ -349,8 +348,11 @@ const DEFAULT_TASKS = [
   { id: 9, title: '자료구조와 알고리즘 시험',      subject: '자료구조와 알고리즘', type: '시험', dueDate: '2026-06-20', dueTime: '',    completed: false },
 ];
 
+// ─── Config ───────────────────────────────────────────────────────────────────
+const OPENAI_API_KEY = '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';
+
 // ─── Password Lock ────────────────────────────────────────────────────────────
-const CORRECT_PIN = '3189ㄹ';
+const CORRECT_PIN = '3189';
 let pinBuffer = '';
 
 function initLock() {
@@ -407,7 +409,6 @@ let tasks = [];
 let activeTab = 'all';        // 'all' | 'incomplete' | 'complete'
 let activeType = '과제';       // '과제' | '시험'
 let activeSubject = '전체';    // '전체' | subject name
-let searchQuery = '';          // search text
 
 // Input form state
 let inputSubject = '';
@@ -473,13 +474,12 @@ function getAllSubjects() {
 }
 
 function getFilteredTasks() {
-  const q = searchQuery.trim().toLowerCase();
   const filtered = tasks.filter(t => {
     if (activeTab === 'incomplete' && t.completed) return false;
     if (activeTab === 'complete' && !t.completed) return false;
     if (t.type !== activeType) return false;
     if (activeSubject !== '전체' && t.subject !== activeSubject) return false;
-    if (q && !t.title.toLowerCase().includes(q) && !t.subject.toLowerCase().includes(q)) return false;
+    if (searchResultIds !== null && !searchResultIds.includes(t.id)) return false;
     return true;
   });
   // 미완료: 마감일 오름차순, 완료: 하단에
@@ -793,17 +793,94 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addTask();
 });
 
-// ─── Search ───────────────────────────────────────────────────────────────────
-document.getElementById('searchInput').addEventListener('input', function() {
-  searchQuery = this.value;
-  const clearBtn = document.getElementById('searchClear');
-  clearBtn.classList.toggle('visible', searchQuery.length > 0);
+// ─── AI Search ────────────────────────────────────────────────────────────────
+let searchResultIds = null;  // null = 필터 없음, [] = 결과 없음, [id,...] = 매칭
+let searchDebounce = null;
+
+async function aiSearch(query) {
+  if (!query.trim()) {
+    searchResultIds = null;
+    renderAll();
+    setSearchState('idle');
+    return;
+  }
+  setSearchState('loading');
+  try {
+    const taskList = tasks.map(t =>
+      `id:${t.id} 제목:"${t.title}" 과목:"${t.subject}" 유형:${t.type} 마감:${t.dueDate||'없음'}`
+    ).join('\n');
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0,
+        messages: [
+          {
+            role: 'system',
+            content: '학생 할 일 관리 앱의 검색 도우미입니다. 사용자 쿼리와 관련된 할 일 항목의 id만 쉼표로 구분하여 반환하세요. 관련 없으면 빈 문자열을 반환하세요. 다른 설명은 절대 하지 마세요.'
+          },
+          {
+            role: 'user',
+            content: `할 일 목록:\n${taskList}\n\n검색어: "${query}"\n\n관련 항목의 id를 쉼표로 반환:`
+          }
+        ]
+      })
+    });
+    const data = await res.json();
+    const raw = data.choices?.[0]?.message?.content?.trim() || '';
+    searchResultIds = raw === '' ? [] : raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+    setSearchState('done');
+  } catch(e) {
+    console.error('AI search error:', e);
+    setSearchState('error');
+    searchResultIds = null;
+  }
   renderAll();
+}
+
+function setSearchState(state) {
+  const icon = document.querySelector('#searchBar .material-symbols-outlined');
+  if (state === 'loading') {
+    icon.textContent = 'autorenew';
+    icon.style.animation = 'spin 1s linear infinite';
+  } else if (state === 'error') {
+    icon.textContent = 'error_outline';
+    icon.style.animation = '';
+  } else {
+    icon.textContent = 'search';
+    icon.style.animation = '';
+  }
+}
+
+// spin keyframe 추가
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(spinStyle);
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value;
+  document.getElementById('searchClear').classList.toggle('visible', q.length > 0);
+  clearTimeout(searchDebounce);
+  if (!q.trim()) {
+    searchResultIds = null;
+    setSearchState('idle');
+    renderAll();
+    return;
+  }
+  setSearchState('loading');
+  searchDebounce = setTimeout(() => aiSearch(q), 500);
 });
+
 document.getElementById('searchClear').addEventListener('click', function() {
-  searchQuery = '';
   document.getElementById('searchInput').value = '';
   this.classList.remove('visible');
+  searchResultIds = null;
+  clearTimeout(searchDebounce);
+  setSearchState('idle');
   renderAll();
 });
 
