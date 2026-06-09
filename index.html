@@ -222,11 +222,23 @@
       </div>
     </div>
     <p id="todayLabel" class="text-secondary font-medium"></p>
-    <!-- Search Bar -->
-    <div id="searchBar" class="mt-4">
-      <span class="material-symbols-outlined" style="font-size:18px;color:#c7c6c6">search</span>
-      <input id="searchInput" type="text" placeholder="할 일 검색..." autocomplete="off"/>
-      <span id="searchClear" class="material-symbols-outlined">close</span>
+    <!-- AI Assistant Bar -->
+    <form id="aiForm" class="mt-4" onsubmit="return false;">
+      <div id="searchBar">
+        <span id="aiIcon" class="material-symbols-outlined" style="font-size:18px;color:#c7c6c6">auto_awesome</span>
+        <input id="searchInput" type="text" placeholder="AI에게 물어보세요 (예: 이번 주에 뭐 해야해?)" autocomplete="off"/>
+        <button type="submit" id="aiSendBtn" style="background:none;border:none;cursor:pointer;padding:0;display:flex;align-items:center;">
+          <span class="material-symbols-outlined" style="font-size:18px;color:#c7c6c6;transition:color .2s" id="aiSendIcon">send</span>
+        </button>
+      </div>
+    </form>
+    <!-- AI Response Bubble -->
+    <div id="aiResponse" style="display:none; margin-top:10px; background:#fff; border:1px solid #F0F0F0; border-radius:12px; padding:14px 16px; font-size:14px; line-height:1.6; color:#1a1c1c; position:relative;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#999;margin-bottom:6px;display:flex;align-items:center;gap:4px;">
+        <span class="material-symbols-outlined" style="font-size:13px;">auto_awesome</span> AI 어시스턴트
+      </div>
+      <div id="aiResponseText" style="white-space:pre-wrap;"></div>
+      <button onclick="closeAiResponse()" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;color:#c7c6c6;font-size:16px;line-height:1;">✕</button>
     </div>
     <!-- Secondary Navigation Links -->
     <nav class="flex gap-6 mt-5">
@@ -479,7 +491,6 @@ function getFilteredTasks() {
     if (activeTab === 'complete' && !t.completed) return false;
     if (t.type !== activeType) return false;
     if (activeSubject !== '전체' && t.subject !== activeSubject) return false;
-    if (searchResultIds !== null && !searchResultIds.includes(t.id)) return false;
     return true;
   });
   // 미완료: 마감일 오름차순, 완료: 하단에
@@ -793,22 +804,40 @@ document.getElementById('taskInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') addTask();
 });
 
-// ─── AI Search ────────────────────────────────────────────────────────────────
-let searchResultIds = null;  // null = 필터 없음, [] = 결과 없음, [id,...] = 매칭
-let searchDebounce = null;
+// ─── AI Assistant ─────────────────────────────────────────────────────────────
+// spin keyframe
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+document.head.appendChild(spinStyle);
 
-async function aiSearch(query) {
-  if (!query.trim()) {
-    searchResultIds = null;
-    renderAll();
-    setSearchState('idle');
-    return;
-  }
-  setSearchState('loading');
+function getTaskContext() {
+  const today = TODAY.toISOString().split('T')[0];
+  return tasks.map(t => {
+    const days = getDaysUntil(t.dueDate);
+    const dStr = t.dueDate ? `마감 ${t.dueDate}${t.dueTime ? ' ' + t.dueTime : ''} (${days !== null ? 'D-' + days : '날짜없음'})` : '마감일 없음';
+    return `- [${t.type}] ${t.title} | 과목: ${t.subject} | ${dStr} | ${t.completed ? '✅완료' : '⬜미완료'}`;
+  }).join('\n');
+}
+
+async function askAI(question) {
+  const icon = document.getElementById('aiIcon');
+  const sendIcon = document.getElementById('aiSendIcon');
+  icon.textContent = 'autorenew';
+  icon.style.animation = 'spin 1s linear infinite';
+  sendIcon.style.color = '#000';
+
+  const responseEl = document.getElementById('aiResponse');
+  const textEl = document.getElementById('aiResponseText');
+  responseEl.style.display = 'block';
+  textEl.textContent = '';
+
+  // 스트리밍 타이핑 효과
+  let dotCount = 0;
+  const loadingInterval = setInterval(() => {
+    textEl.textContent = '생각하는 중' + '.'.repeat((dotCount++ % 3) + 1);
+  }, 400);
+
   try {
-    const taskList = tasks.map(t =>
-      `id:${t.id} 제목:"${t.title}" 과목:"${t.subject}" 유형:${t.type} 마감:${t.dueDate||'없음'}`
-    ).join('\n');
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -817,71 +846,60 @@ async function aiSearch(query) {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        temperature: 0,
+        temperature: 0.7,
+        stream: false,
         messages: [
           {
             role: 'system',
-            content: '학생 할 일 관리 앱의 검색 도우미입니다. 사용자 쿼리와 관련된 할 일 항목의 id만 쉼표로 구분하여 반환하세요. 관련 없으면 빈 문자열을 반환하세요. 다른 설명은 절대 하지 마세요.'
+            content: `당신은 학생의 할 일 관리를 도와주는 친근한 AI 어시스턴트입니다.
+오늘 날짜: ${TODAY.toISOString().split('T')[0]} (${['일','월','화','수','목','금','토'][TODAY.getDay()]}요일)
+
+현재 등록된 할 일 목록:
+${getTaskContext()}
+
+사용자의 질문에 위 정보를 바탕으로 친절하고 간결하게 답변하세요.
+마감이 임박한 항목은 강조해주고, 우선순위 제안도 해주세요.
+답변은 3~5문장 이내로 간결하게 작성하세요.`
           },
-          {
-            role: 'user',
-            content: `할 일 목록:\n${taskList}\n\n검색어: "${query}"\n\n관련 항목의 id를 쉼표로 반환:`
-          }
+          { role: 'user', content: question }
         ]
       })
     });
     const data = await res.json();
-    const raw = data.choices?.[0]?.message?.content?.trim() || '';
-    searchResultIds = raw === '' ? [] : raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
-    setSearchState('done');
+    clearInterval(loadingInterval);
+    const answer = data.choices?.[0]?.message?.content || '답변을 가져오지 못했습니다.';
+    // 타이핑 효과
+    textEl.textContent = '';
+    let i = 0;
+    const typing = setInterval(() => {
+      textEl.textContent += answer[i++];
+      if (i >= answer.length) clearInterval(typing);
+    }, 18);
   } catch(e) {
-    console.error('AI search error:', e);
-    setSearchState('error');
-    searchResultIds = null;
-  }
-  renderAll();
-}
-
-function setSearchState(state) {
-  const icon = document.querySelector('#searchBar .material-symbols-outlined');
-  if (state === 'loading') {
-    icon.textContent = 'autorenew';
-    icon.style.animation = 'spin 1s linear infinite';
-  } else if (state === 'error') {
-    icon.textContent = 'error_outline';
+    clearInterval(loadingInterval);
+    textEl.textContent = '⚠️ 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+  } finally {
+    icon.textContent = 'auto_awesome';
     icon.style.animation = '';
-  } else {
-    icon.textContent = 'search';
-    icon.style.animation = '';
+    sendIcon.style.color = '#c7c6c6';
   }
 }
 
-// spin keyframe 추가
-const spinStyle = document.createElement('style');
-spinStyle.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
-document.head.appendChild(spinStyle);
-
-document.getElementById('searchInput').addEventListener('input', function() {
-  const q = this.value;
-  document.getElementById('searchClear').classList.toggle('visible', q.length > 0);
-  clearTimeout(searchDebounce);
-  if (!q.trim()) {
-    searchResultIds = null;
-    setSearchState('idle');
-    renderAll();
-    return;
-  }
-  setSearchState('loading');
-  searchDebounce = setTimeout(() => aiSearch(q), 500);
-});
-
-document.getElementById('searchClear').addEventListener('click', function() {
+function closeAiResponse() {
+  document.getElementById('aiResponse').style.display = 'none';
   document.getElementById('searchInput').value = '';
-  this.classList.remove('visible');
-  searchResultIds = null;
-  clearTimeout(searchDebounce);
-  setSearchState('idle');
-  renderAll();
+}
+
+document.getElementById('aiForm').addEventListener('submit', () => {
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) askAI(q);
+});
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const q = document.getElementById('searchInput').value.trim();
+    if (q) askAI(q);
+  }
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
