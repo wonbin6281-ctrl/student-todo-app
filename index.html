@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html class="light" lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>내 할 일 - 학생 할 일 관리</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "secondary-fixed-dim": "#c7c6c6",
+          "status-orange": "#BA7517",
+          "on-primary-fixed-variant": "#474646",
+          "on-tertiary-container": "#868381",
+          "surface-container-lowest": "#ffffff",
+          "tag-exam-text": "#4B2DBF",
+          "on-secondary": "#ffffff",
+          "on-secondary-fixed": "#1b1c1c",
+          "on-tertiary-fixed-variant": "#484645",
+          "on-primary": "#ffffff",
+          "on-tertiary": "#ffffff",
+          "tag-hw-text": "#1E6B35",
+          "on-primary-fixed": "#1c1b1b",
+          "tertiary-fixed-dim": "#cac6c3",
+          "status-green": "#3B6D11",
+          "on-secondary-container": "#626262",
+          "on-error": "#ffffff",
+          "surface-muted": "#FAFADA",
+          "surface-dim": "#dadada",
+          "tertiary-fixed": "#e6e1df",
+          "on-surface": "#1a1c1c",
+          "surface-tint": "#5f5e5e",
+          "primary-container": "#1c1b1b",
+          "on-tertiary-fixed": "#1d1b1a",
+          "tertiary-container": "#1d1b1a",
+          "on-secondary-fixed-variant": "#464747",
+          "secondary-fixed": "#e4e2e2",
+          "primary-fixed": "#e5e2e1",
+          "status-red": "#A32D2D",
+          "surface-container-high": "#e8e8e8",
+          "surface-variant": "#e2e2e2",
+          "outline-variant": "#c4c7c7",
+          "error": "#ba1a1a",
+          "surface-container": "#eeeeee",
+          "primary": "#000000",
+          "background": "#f9f9f9",
+          "tag-urgent-bg": "#FFF0D9",
+          "surface-container-low": "#f3f3f4",
+          "error-container": "#ffdad6",
+          "primary-fixed-dim": "#c8c6c5",
+          "surface-bright": "#f9f9f9",
+          "tag-urgent-text": "#8B4A00",
+          "on-primary-container": "#858383",
+          "surface-container-highest": "#e2e2e2",
+          "outline": "#747878",
+          "on-background": "#1a1c1c",
+          "secondary-container": "#e1dfdf",
+          "inverse-on-surface": "#f0f1f1",
+          "tag-hw-bg": "#E6F4EA",
+          "on-surface-variant": "#444748",
+          "tag-exam-bg": "#EEE8FD",
+          "on-error-container": "#93000a",
+          "surface": "#f9f9f9",
+          "secondary": "#5e5e5e",
+          "border-subtle": "#F0F0F0",
+          "inverse-primary": "#c8c6c5",
+          "tertiary": "#000000",
+          "inverse-surface": "#2f3131"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.25rem",
+          "lg": "0.5rem",
+          "xl": "0.75rem",
+          "full": "9999px"
+        },
+        "spacing": {
+          "section-gap": "3.5rem",
+          "gutter": "1rem",
+          "padding-page": "2rem",
+          "container-max": "860px",
+          "item-gap": "0.75rem"
+        },
+        "fontFamily": {
+          "label-sm": ["Inter"],
+          "body-default": ["Inter"],
+          "display-title-mobile": ["Inter"],
+          "display-title": ["Inter"],
+          "subheader": ["Inter"],
+          "headline-sec": ["Inter"],
+          "badge": ["Inter"],
+          "eyebrow": ["Inter"],
+          "body-lg": ["Inter"]
+        },
+        "fontSize": {
+          "label-sm": ["13px", {"lineHeight": "1.2", "fontWeight": "500"}],
+          "body-default": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+          "display-title-mobile": ["26px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+          "display-title": ["38px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+          "subheader": ["16px", {"lineHeight": "1.4", "fontWeight": "600"}],
+          "headline-sec": ["22px", {"lineHeight": "1.4", "fontWeight": "700"}],
+          "badge": ["11px", {"lineHeight": "1.0", "fontWeight": "600"}],
+          "eyebrow": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.1em", "fontWeight": "500"}],
+          "body-lg": ["15px", {"lineHeight": "1.7", "fontWeight": "400"}]
+        }
+      },
+    },
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e2e2e2; border-radius: 10px; }
+  .task-card:hover .delete-btn { opacity: 1; }
+  #subjectDropdown { max-height: 220px; overflow-y: auto; }
+  .subject-filter-btn { white-space: nowrap; flex-shrink: 0; }
+</style>
+</head>
+<body class="bg-background text-on-background min-h-screen">
+
+<!-- Top Navigation Anchor -->
+<header class="bg-background sticky top-0 z-50">
+  <div class="flex flex-col w-full max-w-container-max mx-auto px-padding-page pt-8 pb-4">
+    <div class="flex justify-between items-end mb-2">
+      <h1 class="text-display-title-mobile font-display-title-mobile text-primary">내 할 일</h1>
+      <div class="flex gap-4">
+        <button class="hover:text-primary transition-colors duration-200">
+          <span class="material-symbols-outlined">calendar_today</span>
+        </button>
+        <button class="hover:text-primary transition-colors duration-200">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button class="hover:text-primary transition-colors duration-200">
+          <span class="material-symbols-outlined">settings</span>
+        </button>
+      </div>
+    </div>
+    <p id="todayLabel" class="text-secondary font-medium"></p>
+    <!-- Secondary Navigation Links -->
+    <nav class="flex gap-6 mt-6">
+      <a id="tab-all" class="tab-link text-primary border-b-2 border-primary font-bold pb-2 transition-colors cursor-pointer" data-tab="all">전체</a>
+      <a id="tab-incomplete" class="tab-link text-secondary font-medium pb-2 hover:text-primary transition-colors cursor-pointer" data-tab="incomplete">미완료</a>
+      <a id="tab-complete" class="tab-link text-secondary font-medium pb-2 hover:text-primary transition-colors cursor-pointer" data-tab="complete">완료</a>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-container-max mx-auto px-padding-page pb-16">
+  <!-- Summary Cards Bento Grid -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-item-gap mb-8">
+    <div class="bg-surface-muted border border-border-subtle p-6 rounded-xl flex flex-col items-center justify-center transition-all hover:border-primary">
+      <span id="countTotal" class="text-display-title text-primary">0</span>
+      <span class="text-label-sm text-secondary uppercase tracking-wider">전체</span>
+    </div>
+    <div class="bg-surface-muted border border-border-subtle p-6 rounded-xl flex flex-col items-center justify-center transition-all hover:border-primary">
+      <span id="countUrgent" class="text-display-title text-status-orange">0</span>
+      <span class="text-label-sm text-secondary uppercase tracking-wider">3일 내 마감</span>
+    </div>
+    <div class="bg-surface-muted border border-border-subtle p-6 rounded-xl flex flex-col items-center justify-center transition-all hover:border-primary">
+      <span id="countDone" class="text-display-title text-status-green">0</span>
+      <span class="text-label-sm text-secondary uppercase tracking-wider">완료</span>
+    </div>
+  </section>
+
+  <!-- Segmented Control for Assignment/Exams -->
+  <div class="flex items-center gap-2 mb-6">
+    <div class="bg-surface-container p-1 rounded-lg flex">
+      <button id="type-hw" class="type-btn px-6 py-1.5 rounded-md text-label-sm font-label-sm bg-background shadow-sm text-primary" data-type="과제">과제</button>
+      <button id="type-exam" class="type-btn px-6 py-1.5 rounded-md text-label-sm font-label-sm text-secondary hover:text-primary transition-colors" data-type="시험">시험</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div id="subjectFilters" class="flex gap-2 mb-8 overflow-x-auto pb-2">
+    <!-- Dynamically rendered -->
+  </div>
+
+  <!-- Input Section -->
+  <div class="relative bg-background border border-border-subtle p-3 rounded-xl flex flex-col md:flex-row gap-3 mb-10 transition-all focus-within:border-primary">
+    <input id="taskInput" class="flex-grow bg-transparent border-none focus:ring-0 px-4 text-body-default placeholder:text-secondary-fixed-dim" placeholder="할 일 입력..." type="text"/>
+    <div class="flex gap-2 relative">
+      <!-- Subject Button -->
+      <div class="relative">
+        <button id="subjectBtn" onclick="toggleSubjectDropdown(event)" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-container-low text-secondary hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-[18px]">book</span>
+          <span id="subjectBtnLabel" class="text-label-sm">과목</span>
+        </button>
+        <div id="subjectDropdown" class="hidden absolute top-full left-0 mt-1 bg-white border border-border-subtle rounded-xl shadow-lg z-50 w-48 py-1">
+          <!-- Subject options rendered dynamically -->
+        </div>
+      </div>
+      <!-- Date Button -->
+      <div class="relative">
+        <button id="dateBtn" onclick="triggerDatePicker()" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-container-low text-secondary hover:bg-surface-container transition-colors">
+          <span class="material-symbols-outlined text-[18px]">event</span>
+          <span id="dateBtnLabel" class="text-label-sm">날짜</span>
+        </button>
+        <input id="dateInput" type="datetime-local" class="hidden" onchange="handleDateChange(this.value)"/>
+      </div>
+      <!-- Type Toggle Button -->
+      <button id="inputTypeBtn" onclick="toggleInputType()" class="flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-container-low text-secondary hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined text-[18px]">assignment</span>
+        <span id="inputTypeBtnLabel" class="text-label-sm">과제</span>
+      </button>
+      <!-- Add Button -->
+      <button onclick="addTask()" class="bg-primary text-on-primary px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        <span>추가</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Task List -->
+  <div>
+    <h3 id="sectionTitle" class="text-eyebrow text-secondary mb-4">남은 할 일</h3>
+    <div id="taskList" class="space-y-item-gap">
+      <!-- Dynamically rendered -->
+    </div>
+    <div id="emptyState" class="hidden text-center py-16 text-secondary text-body-lg">
+      할 일이 없습니다 🎉
+    </div>
+  </div>
+
+  <!-- Scroll Indicator -->
+  <div class="flex justify-center mt-8">
+    <div class="w-10 h-10 rounded-full bg-background border border-border-subtle flex items-center justify-center shadow-sm">
+      <span class="material-symbols-outlined text-secondary animate-bounce">expand_more</span>
+    </div>
+  </div>
+</main>
+
+
+<script>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const TODAY = new Date('2026-06-09T00:00:00');
+
+const SUBJECT_COLORS = {
+  '4차산업혁명':   '#FF4D4D',
+  '데이터분석기초': '#10B981',
+  '정치학입문':    '#4169E1',
+  '딥러닝기초':   '#F97316',
+  '미적분':       '#8A2BE2',
+};
+const COLOR_PALETTE = ['#06B6D4','#EC4899','#84CC16','#F59E0B','#6366F1','#EF4444','#14B8A6'];
+let colorPaletteIdx = 0;
+
+const DEFAULT_TASKS = [
+  { id: 1, title: '4차산업혁명 과제 제출',        subject: '4차산업혁명',        type: '과제', dueDate: '2026-06-11', dueTime: '',    completed: false },
+  { id: 2, title: '데이터분석기초 시험',           subject: '데이터분석기초',      type: '시험', dueDate: '2026-06-13', dueTime: '13:00', completed: false },
+  { id: 3, title: '정치학입문 시험',               subject: '정치학입문',          type: '시험', dueDate: '2026-06-13', dueTime: '16:00', completed: false },
+  { id: 4, title: '딥러닝기초 시험',               subject: '딥러닝기초',          type: '시험', dueDate: '2026-06-16', dueTime: '',    completed: false },
+  { id: 5, title: '미적분 과제 제출',              subject: '미적분',              type: '과제', dueDate: '2026-06-17', dueTime: '',    completed: false },
+  { id: 6, title: '학술적글쓰기 과제 제출',        subject: '학술적글쓰기',        type: '과제', dueDate: '2026-06-17', dueTime: '',    completed: false },
+  { id: 7, title: '미적분 시험',                   subject: '미적분',              type: '시험', dueDate: '2026-06-18', dueTime: '',    completed: false },
+  { id: 8, title: '품질공학 시험',                 subject: '품질공학',            type: '시험', dueDate: '2026-06-19', dueTime: '',    completed: false },
+  { id: 9, title: '자료구조와 알고리즘 시험',      subject: '자료구조와 알고리즘', type: '시험', dueDate: '2026-06-20', dueTime: '',    completed: false },
+];
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let tasks = [];
+let activeTab = 'all';        // 'all' | 'incomplete' | 'complete'
+let activeType = '과제';       // '과제' | '시험'
+let activeSubject = '전체';    // '전체' | subject name
+
+// Input form state
+let inputSubject = '';
+let inputDate = '';
+let inputTime = '';
+let inputType = '과제';
+
+// ─── Storage ─────────────────────────────────────────────────────────────────
+function loadTasks() {
+  try {
+    const saved = localStorage.getItem('tasks_v2');
+    tasks = saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  } catch(e) {
+    tasks = JSON.parse(JSON.stringify(DEFAULT_TASKS));
+  }
+}
+function saveTasks() {
+  localStorage.setItem('tasks_v2', JSON.stringify(tasks));
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function getSubjectColor(subject) {
+  if (!SUBJECT_COLORS[subject]) {
+    SUBJECT_COLORS[subject] = COLOR_PALETTE[colorPaletteIdx % COLOR_PALETTE.length];
+    colorPaletteIdx++;
+  }
+  return SUBJECT_COLORS[subject];
+}
+
+function getDaysUntil(dueDateStr) {
+  if (!dueDateStr) return null;
+  const due = new Date(dueDateStr + 'T00:00:00');
+  const diff = Math.floor((due - TODAY) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+function getStatusAccentColor(days) {
+  if (days === null) return '#c7c6c6';
+  if (days <= 0)  return '#A32D2D';
+  if (days <= 2)  return '#A32D2D';
+  if (days <= 3)  return '#BA7517';
+  if (days <= 7)  return '#3B6D11';
+  return '#c7c6c6';
+}
+
+function formatDueBadge(task) {
+  const days = getDaysUntil(task.dueDate);
+  if (days === null) return '';
+  const timeStr = task.dueTime ? ` ${task.dueTime}` : '';
+  if (days < 0) return { icon: 'priority_high', text: `D+${Math.abs(days)}`, color: 'status-red' };
+  if (days === 0) return { icon: 'priority_high', text: 'D-Day', color: 'status-red' };
+  if (days <= 2) return { icon: 'priority_high', text: `D-${days}${timeStr}`, color: 'status-red' };
+  if (days <= 3) return { icon: 'schedule', text: `D-${days}${timeStr}`, color: 'status-orange' };
+  const dueDate = new Date(task.dueDate + 'T00:00:00');
+  const mo = dueDate.getMonth() + 1;
+  const da = dueDate.getDate();
+  return { icon: 'calendar_today', text: `${mo}/${da} (D-${days})`, color: 'secondary' };
+}
+
+function getAllSubjects() {
+  const set = new Set(tasks.filter(t => t.type === activeType).map(t => t.subject).filter(Boolean));
+  return ['전체', ...Array.from(set)];
+}
+
+function getFilteredTasks() {
+  const filtered = tasks.filter(t => {
+    if (activeTab === 'incomplete' && t.completed) return false;
+    if (activeTab === 'complete' && !t.completed) return false;
+    if (t.type !== activeType) return false;
+    if (activeSubject !== '전체' && t.subject !== activeSubject) return false;
+    return true;
+  });
+  // 미완료: 마감일 오름차순, 완료: 하단에
+  const incomplete = filtered.filter(t => !t.completed).sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+  const complete = filtered.filter(t => t.completed).sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+  return [...incomplete, ...complete];
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderTodayLabel();
+  renderSummaryCounts();
+  renderSubjectFilters();
+  renderTaskList();
+}
+
+function renderTodayLabel() {
+  const days = ['일','월','화','수','목','금','토'];
+  const d = TODAY;
+  document.getElementById('todayLabel').textContent =
+    `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 ${days[d.getDay()]}요일`;
+}
+
+function renderSummaryCounts() {
+  const tabTasks = tasks.filter(t => t.type === activeType);
+  const incomplete = tabTasks.filter(t => !t.completed);
+  const urgent = incomplete.filter(t => {
+    const days = getDaysUntil(t.dueDate);
+    return days !== null && days >= 0 && days <= 3;
+  });
+  const done = tabTasks.filter(t => t.completed);
+  document.getElementById('countTotal').textContent = tabTasks.length;
+  document.getElementById('countUrgent').textContent = urgent.length;
+  document.getElementById('countDone').textContent = done.length;
+}
+
+function renderSubjectFilters() {
+  const subjects = getAllSubjects();
+  const container = document.getElementById('subjectFilters');
+  container.innerHTML = subjects.map(s => {
+    const isActive = s === activeSubject;
+    if (isActive) {
+      return `<button class="subject-filter-btn flex-shrink-0 px-4 py-1.5 rounded-full bg-primary text-on-primary text-label-sm font-label-sm whitespace-nowrap" data-subject="${s}">${s}</button>`;
+    }
+    return `<button class="subject-filter-btn flex-shrink-0 px-4 py-1.5 rounded-full bg-background border border-border-subtle text-secondary text-label-sm font-label-sm hover:border-primary transition-colors whitespace-nowrap" data-subject="${s}">${s}</button>`;
+  }).join('');
+  container.querySelectorAll('.subject-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeSubject = btn.dataset.subject;
+      renderAll();
+    });
+  });
+}
+
+function renderTaskList() {
+  const filtered = getFilteredTasks();
+  const listEl = document.getElementById('taskList');
+  const emptyEl = document.getElementById('emptyState');
+  const titleEl = document.getElementById('sectionTitle');
+
+  if (activeTab === 'complete') {
+    titleEl.textContent = '완료된 할 일';
+  } else if (activeTab === 'incomplete') {
+    titleEl.textContent = '남은 할 일';
+  } else {
+    titleEl.textContent = '남은 할 일';
+  }
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.classList.remove('hidden');
+    return;
+  }
+  emptyEl.classList.add('hidden');
+
+  listEl.innerHTML = filtered.map(task => {
+    const days = getDaysUntil(task.dueDate);
+    const accentColor = task.completed ? '#c7c6c6' : getStatusAccentColor(days);
+    const subjectColor = getSubjectColor(task.subject);
+    const badge = formatDueBadge(task);
+    const isExam = task.type === '시험';
+    const checkInner = task.completed
+      ? `<span class="material-symbols-outlined text-status-green text-[18px]">done</span>`
+      : '';
+    const cardOpacity = task.completed ? 'opacity-50' : '';
+    const titleDecoration = task.completed ? 'line-through text-secondary' : 'text-primary';
+    // 시험: 사각형, 과제: 원형
+    const cbShape = isExam ? 'rounded' : 'rounded-full';
+
+    const dueBadgeHtml = badge
+      ? `<span class="flex items-center gap-1 text-label-sm text-${badge.color} font-bold">
+           <span class="material-symbols-outlined text-[16px]">${badge.icon}</span>
+           ${badge.text}
+         </span>`
+      : '';
+
+    return `
+    <div class="task-card relative bg-background border border-border-subtle rounded-xl p-4 flex items-center group overflow-hidden transition-all hover:border-primary ${cardOpacity}" data-id="${task.id}">
+      <div class="absolute left-0 top-0 bottom-0 w-1" style="background:${accentColor}"></div>
+      <div class="flex-shrink-0 mr-4">
+        <div class="checkbox-btn w-6 h-6 ${cbShape} border-2 border-border-subtle hover:border-primary transition-colors cursor-pointer flex items-center justify-center" data-id="${task.id}">
+          ${checkInner}
+        </div>
+      </div>
+      <div class="flex-grow">
+        <h4 class="text-subheader ${titleDecoration} mb-1">${task.title}</h4>
+        <div class="flex gap-2 items-center flex-wrap">
+          <span class="px-2 py-0.5 rounded text-white text-badge" style="background:${subjectColor}">${task.subject}</span>
+          <span class="text-label-sm text-secondary">${task.type}</span>
+          ${dueBadgeHtml}
+        </div>
+      </div>
+      <button class="delete-btn opacity-0 text-secondary hover:text-status-red transition-all duration-200" data-id="${task.id}">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>`;
+  }).join('');
+
+  // Bind events
+  listEl.querySelectorAll('.checkbox-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasks();
+        renderAll();
+      }
+    });
+  });
+
+  listEl.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = parseInt(btn.dataset.id);
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      renderAll();
+    });
+  });
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-link').forEach(link => {
+  link.addEventListener('click', () => {
+    activeTab = link.dataset.tab;
+    document.querySelectorAll('.tab-link').forEach(l => {
+      l.classList.remove('text-primary', 'border-b-2', 'border-primary', 'font-bold');
+      l.classList.add('text-secondary', 'font-medium');
+    });
+    link.classList.add('text-primary', 'border-b-2', 'border-primary', 'font-bold');
+    link.classList.remove('text-secondary', 'font-medium');
+    renderAll();
+  });
+});
+
+// ─── Type Segmented Control ───────────────────────────────────────────────────
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeType = btn.dataset.type;
+    document.querySelectorAll('.type-btn').forEach(b => {
+      b.classList.remove('bg-background', 'shadow-sm', 'text-primary');
+      b.classList.add('text-secondary');
+    });
+    btn.classList.add('bg-background', 'shadow-sm', 'text-primary');
+    btn.classList.remove('text-secondary');
+    renderAll();
+  });
+});
+
+// ─── Input Form ───────────────────────────────────────────────────────────────
+function toggleSubjectDropdown(e) {
+  e.stopPropagation();
+  const dropdown = document.getElementById('subjectDropdown');
+  const isHidden = dropdown.classList.contains('hidden');
+  closeAllDropdowns();
+  if (isHidden) {
+    renderSubjectDropdown();
+    dropdown.classList.remove('hidden');
+  }
+}
+
+function renderSubjectDropdown() {
+  const subjects = Object.keys(SUBJECT_COLORS);
+  // Add any subjects in tasks that aren't in the preset
+  tasks.forEach(t => { if (t.subject && !subjects.includes(t.subject)) subjects.push(t.subject); });
+  const dropdown = document.getElementById('subjectDropdown');
+  dropdown.innerHTML = `
+    <div class="px-3 py-1.5 text-eyebrow text-secondary uppercase tracking-wider">과목 선택</div>
+    ${subjects.map(s => `
+      <div class="subject-option px-4 py-2 text-body-default hover:bg-surface-container-low cursor-pointer flex items-center gap-2" data-subject="${s}">
+        <span class="w-2 h-2 rounded-full" style="background:${getSubjectColor(s)}"></span>
+        ${s}
+      </div>
+    `).join('')}
+    <div class="border-t border-border-subtle mt-1 pt-1">
+      <div class="px-3 py-1">
+        <input id="newSubjectInput" type="text" placeholder="새 과목 입력..." class="w-full text-body-default bg-surface-container-low rounded px-2 py-1 border-none focus:ring-1 focus:ring-primary" />
+      </div>
+    </div>
+  `;
+  dropdown.querySelectorAll('.subject-option').forEach(opt => {
+    opt.addEventListener('click', e => {
+      e.stopPropagation();
+      selectSubject(opt.dataset.subject);
+    });
+  });
+  const newSubjectInput = dropdown.querySelector('#newSubjectInput');
+  newSubjectInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const val = newSubjectInput.value.trim();
+      if (val) selectSubject(val);
+    }
+    e.stopPropagation();
+  });
+  newSubjectInput.addEventListener('click', e => e.stopPropagation());
+}
+
+function selectSubject(subject) {
+  inputSubject = subject;
+  document.getElementById('subjectBtnLabel').textContent = subject;
+  closeAllDropdowns();
+}
+
+function triggerDatePicker() {
+  document.getElementById('dateInput').click();
+}
+
+function handleDateChange(val) {
+  if (!val) return;
+  const [datePart, timePart] = val.split('T');
+  inputDate = datePart;
+  inputTime = timePart || '';
+  const [y, m, d] = datePart.split('-');
+  const label = `${parseInt(m)}/${parseInt(d)}${timePart ? ' ' + timePart.substring(0, 5) : ''}`;
+  document.getElementById('dateBtnLabel').textContent = label;
+}
+
+function toggleInputType() {
+  inputType = inputType === '과제' ? '시험' : '과제';
+  document.getElementById('inputTypeBtnLabel').textContent = inputType;
+}
+
+function addTask() {
+  const input = document.getElementById('taskInput');
+  const title = input.value.trim();
+  if (!title) {
+    input.focus();
+    input.classList.add('ring-1', 'ring-red-400');
+    setTimeout(() => input.classList.remove('ring-1', 'ring-red-400'), 1000);
+    return;
+  }
+  const subject = inputSubject || '기타';
+  if (!SUBJECT_COLORS[subject]) {
+    SUBJECT_COLORS[subject] = COLOR_PALETTE[colorPaletteIdx % COLOR_PALETTE.length];
+    colorPaletteIdx++;
+  }
+  const newId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+  tasks.push({
+    id: newId,
+    title,
+    subject,
+    type: inputType,
+    dueDate: inputDate,
+    dueTime: inputTime,
+    completed: false,
+  });
+  saveTasks();
+  // Reset form
+  input.value = '';
+  inputSubject = '';
+  inputDate = '';
+  inputTime = '';
+  inputType = '과제';
+  document.getElementById('subjectBtnLabel').textContent = '과목';
+  document.getElementById('dateBtnLabel').textContent = '날짜';
+  document.getElementById('inputTypeBtnLabel').textContent = '과제';
+  document.getElementById('dateInput').value = '';
+  // Switch to matching type tab so the new task is visible
+  activeType = inputType === '과제' ? '과제' : '시험';
+  document.querySelectorAll('.type-btn').forEach(b => {
+    if (b.dataset.type === activeType) {
+      b.classList.add('bg-background', 'shadow-sm', 'text-primary');
+      b.classList.remove('text-secondary');
+    } else {
+      b.classList.remove('bg-background', 'shadow-sm', 'text-primary');
+      b.classList.add('text-secondary');
+    }
+  });
+  renderAll();
+}
+
+function closeAllDropdowns() {
+  document.getElementById('subjectDropdown').classList.add('hidden');
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', closeAllDropdowns);
+
+// Enter key submits task
+document.getElementById('taskInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+loadTasks();
+renderAll();
+</script>
+</body>
+</html>
